@@ -37,6 +37,8 @@ public class SignUp extends HttpServlet {
 
                 session.save(newUser);
 
+                session.beginTransaction().commit();
+                
                 responseObject.addProperty("status", true);
                 responseObject.add("content", gson.toJsonTree(newUser));
             } else {
