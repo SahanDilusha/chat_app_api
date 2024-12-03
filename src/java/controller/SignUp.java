@@ -12,6 +12,7 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import model.HibernateUtil;
+import model.Validations;
 import org.hibernate.Session;
 import org.hibernate.criterion.Restrictions;
 
@@ -29,7 +30,19 @@ public class SignUp extends HttpServlet {
 
             JsonObject reuestObject = (JsonObject) gson.fromJson(req.getReader(), JsonObject.class);
 
-            if (session.createCriteria(User.class).add(Restrictions.eq("email", reuestObject.get("email").getAsString())).uniqueResult() == null) {
+            responseObject.addProperty("status", false);
+
+            if (reuestObject == null) {
+                responseObject.addProperty("content", "Request Data missing!");
+            } else if (reuestObject.get("name").getAsString().isEmpty()) {
+                responseObject.addProperty("content", "Please enter your name!");
+            } else if (!Validations.isEmailValid(reuestObject.get("email").getAsString())) {
+                responseObject.addProperty("content", "Invalide Email Addres!");
+            } else if (!Validations.isPasswordValid(reuestObject.get("password").getAsString())) {
+                responseObject.addProperty("content", "Invalide Password!");
+            } else if (!reuestObject.get("confirmPassword").getAsString().equals(reuestObject.get("password").getAsString())) {
+                responseObject.addProperty("content", "Confirm Your Password!");
+            } else if (session.createCriteria(User.class).add(Restrictions.eq("email", reuestObject.get("email").getAsString())).uniqueResult() == null) {
 
                 UserStatus userStatus = (UserStatus) session.get(UserStatus.class, 1);
 
@@ -38,11 +51,11 @@ public class SignUp extends HttpServlet {
                 session.save(newUser);
 
                 session.beginTransaction().commit();
-                
+
                 responseObject.addProperty("status", true);
                 responseObject.add("content", gson.toJsonTree(newUser));
             } else {
-                responseObject.addProperty("status", false);
+                responseObject.add("content", gson.toJsonTree("This email is already registered."));
             }
 
             resp.setContentType("application/json");
